@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"  ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.zerock.mapper.AttendanceMapper">
+
+<select id="todayAttendance" resultType="org.zerock.vo.AttendanceVO">
+  SELECT 
+  att_no,user_id,start_time,end_time,state,att_date,code,vacation
+  FROM 
+  attendance 
+  WHERE
+  user_id =#{userId}
+  AND
+  TO_CHAR(att_date, 'YYYY-MM-DD') = TO_CHAR(SYSDATE, 'YYYY-MM-DD') 
+</select>
+
+<insert id="goToWork">
+    <selectKey keyProperty="attNo" resultType="int" order="BEFORE">
+	    	SELECT SEQ_ATT.NEXTVAL FROM DUAL
+    </selectKey>
+    INSERT INTO 
+    attendance(att_no,user_id,start_time,state,att_date,code)
+    VALUES
+    (#{attNo},#{userId},sysdate, 
+    CASE 
+    <![CDATA[
+    WHEN TO_CHAR(sysdate, 'HH24') < 9 THEN '정상출근'
+    ]]>
+    ELSE '지각'
+    END,sysdate,#{code})
+</insert>
+
+<update id="goToWorkHalfOffAm" >
+   UPDATE attendance
+   SET start_time=sysdate,
+   state=
+   CASE 
+    <![CDATA[
+    WHEN TO_CHAR(sysdate, 'HH24') < 14 THEN '정상출근'
+    ]]>
+    ELSE '지각'
+    END
+   WHERE 
+   user_id = #{userId}
+   AND
+   TO_CHAR(att_date, 'YYYY-MM-DD') = TO_CHAR(SYSDATE, 'YYYY-MM-DD')
+</update>
+
+<update id="goToWorkHalfOffPm" >
+   UPDATE attendance
+   SET start_time=sysdate,
+   state=
+   CASE 
+    <![CDATA[
+    WHEN TO_CHAR(sysdate, 'HH24') < 9 THEN '정상출근'
+    ]]>
+    ELSE '지각'
+    END
+   WHERE 
+   user_id = #{userId}
+   AND
+   TO_CHAR(att_date, 'YYYY-MM-DD') = TO_CHAR(SYSDATE, 'YYYY-MM-DD')
+</update>
+
+<update id="getOffWork" >
+   UPDATE attendance
+   SET end_time=sysdate
+   WHERE 
+   user_id = #{userId}
+   AND
+   TO_CHAR(att_date, 'YYYY-MM-DD') = TO_CHAR(SYSDATE, 'YYYY-MM-DD')
+</update>
+
+<select id="monthAttendance" resultType="org.zerock.vo.AttendanceVO">
+  SELECT 
+  att_no,user_id,start_time,end_time,state,att_date,code,vacation
+  FROM 
+  attendance 
+  WHERE
+  user_id =#{userId}
+  AND
+  att_date 
+  BETWEEN 
+  TO_DATE(#{startDate}, 'YYYY-MM-DD')
+  AND 
+  TO_DATE(#{endDate}, 'YYYY-MM-DD')+ 1
+</select>
+
+<select id="worktime" resultType="org.zerock.vo.WorkTimeVO">
+    
+	    SELECT 
+	    TO_CHAR(att_date,'yyyy/MM/dd') AS att_date,
+        case when trunc(((end_time- start_time)*24*60)/60)=0 then to_char(trunc(MOD((end_time- start_time)*24*60,60)))||'분'
+        else to_char(trunc(((end_time- start_time)*24*60)/60)||'시간') 
+        ||to_char(abs(trunc(MOD((end_time- start_time)*24*60,60))))||'분'
+        END as "worktime_hour",
+        trunc((end_time- start_time)*24*60) as "worktime_minute" ,
+        '9시간' as "standard_worktime_hour",
+        540 as "standard_worktime_minute",
+        case when trunc(((end_time- start_time)*24*60-540)/60)=0 then to_char(trunc(MOD((end_time- start_time)*24*60-540,60)))||'분'
+        else to_char(trunc(((end_time- start_time)*24*60-540)/60)||'시간') 
+        ||to_char(abs(trunc(MOD((end_time- start_time)*24*60-540,60))))||'분'
+        END as "interval_hour" ,
+        trunc((end_time- start_time)*24*60-540) as "interval_minute"
+        FROM attendance
+        WHERE user_id =#{userId}
+        AND att_date BETWEEN TO_DATE(#{startDate}, 'YYYY-MM-DD')
+                    AND TO_DATE(#{endDate}, 'YYYY-MM-DD')+ 1
+        AND  end_time is not null                
+        AND  state IN ('정상출근','지각')            
+        ORDER BY att_date            
+	</select>
+
+<select id="sumworktime" resultType="org.zerock.vo.SumWorkTimeVO">
+        SELECT
+        case when trunc(sum((end_time- start_time)*24*60)/60)=0 then to_char(trunc(MOD(sum((end_time- start_time)*24*60),60)))||'분'
+        else to_char(trunc(sum((end_time- start_time)*24*60)/60)||'시간') 
+        ||to_char(abs(trunc(MOD(sum((end_time- start_time)*24*60),60))))||'분'
+        END as "sum_worktime_hour",        
+        trunc(sum((end_time- start_time)*24*60)) as "sum_worktime_minute"
+        ,case when trunc(sum((end_time- start_time)*24*60-540)/60)=0 then to_char(trunc(MOD(sum((end_time- start_time)*24*60-540),60)))||'분'
+        else to_char(trunc(sum((end_time- start_time)*24*60-540)/60)||'시간') 
+        ||to_char(abs(trunc(MOD(sum((end_time- start_time)*24*60-540),60))))||'분'
+        END as "sum_interval_hour",
+        trunc(sum((end_time- start_time)*24*60-540)) as "sum_interval_minute"
+        FROM attendance 
+        WHERE user_id =#{userId}
+        AND att_date BETWEEN TO_DATE(#{startDate}, 'YYYY-MM-DD') 
+                          AND TO_DATE(#{endDate}, 'YYYY-MM-DD')+ 1
+        AND  end_time is not null
+        AND  state IN ('정상출근','지각')  
+        ORDER BY att_date                           
+   </select>
+
+<select id="getVacation" resultType="org.zerock.vo.VacationVO">
+SELECT
+TO_CHAR(start_date,'yyyy/MM/dd')||'-'||TO_CHAR(end_date,'yyyy/MM/dd') AS vacationdate,
+vacation as holtype, 
+case when vacation IN ('반차(오전)','반차(오후)') then TO_CHAR(0.5)
+else
+TO_CHAR(TO_DATE(end_date, 'YYYY-MM-DD')-TO_DATE(start_date, 'YYYY-MM-DD')+1)
+END AS usevacation,
+TO_CHAR(reporting_date,'yyyy/MM/dd') as approvaldate
+FROM approval
+WHERE writer =#{userId}
+AND reporting_date BETWEEN TO_DATE(#{startDate}, 'YYYY-MM-DD') 
+                   AND TO_DATE(#{endDate}, 'YYYY-MM-DD')+ 1
+AND state='승인'                   
+ORDER BY reporting_date
+</select>
+
+
+
+</mapper>
