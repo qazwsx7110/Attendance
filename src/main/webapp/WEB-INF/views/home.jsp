@@ -4,7 +4,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Insert title heres</title>
+<title>Insert title heres </title>
 <script src="/resources/js/jquery-3.7.1.min.js"></script>
 
 <style >
