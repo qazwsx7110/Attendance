@@ -1,0 +1,273 @@
+<?xml version="1.0" encoding="UTF-8"  ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.zerock.mapper.ApprovalMapper">
+
+<select id="getApprovalMemberList" resultType="org.zerock.vo.MemberVO">
+  SELECT 
+  user_id,user_name,grade,rank
+  FROM 
+  member m
+  LEFT JOIN grade g 
+  ON m.grade=g.grade_name
+  WHERE
+  code =#{code} 
+  AND 
+  <![CDATA[
+  rank <
+   (SELECT rank
+   FROM grade
+   WHERE 
+   grade_name=#{grade}
+   )
+  ]]>
+</select>
+
+<select id="getGrade" resultType="String">
+  SELECT 
+  grade
+  FROM 
+  member
+  WHERE
+  user_id =#{userid} 
+</select>
+
+<select id="getApprovalNumber" resultType="int">
+    SELECT approval_no
+    FROM sequenceapprovalnumber  
+    WHERE code =#{code} 
+</select>
+
+<update id="increaseApprovalNumber" >
+   UPDATE sequenceapprovalnumber 
+   SET approval_no=approval_no+1
+   WHERE code=#{code}
+</update>
+
+<insert id="insertApproval" >
+    INSERT INTO 
+    approval(code,approval_no,reporting_date,writer,title,vacation,start_date,end_date,content,turn,writer_grade,state,writer_name)
+    VALUES
+    (#{approvalvo.code},#{approvalnumber},sysdate,#{approvalvo.writer},#{approvalvo.title},#{approvalvo.vacation},#{approvalvo.startDate},#{approvalvo.endDate},#{approvalvo.content},0,#{approvalvo.writerGrade},'제출',#{approvalvo.writerName})
+</insert>
+
+<insert id="insertSign" parameterType="org.zerock.vo.SignVO">
+    <selectKey keyProperty="signNo" resultType="int" order="BEFORE">
+	    	SELECT SEQ_SIGN.NEXTVAL FROM DUAL
+    </selectKey>
+    INSERT INTO 
+    sign(code,approval_no,approver,order_no,sign_no)
+    VALUES
+    (#{code},#{approvalNo},#{approvar},#{orderNo},#{signNo})
+</insert>
+ 
+ <select id="getWaitApprovalListTotalCount" resultType="int">
+      SELECT 
+      count(*) 
+      FROM
+      approval a
+      JOIN sign s 
+      ON
+      a.code=s.code 
+      AND
+      a.approval_no=s.approval_no
+      AND approver=#{approver}
+      AND turn=order_no
+      AND state='제출'
+</select>
+ 
+<select id="getWaitApprovalList" resultType="org.zerock.vo.ApprovalVO">
+   
+  SELECT 
+  code ,approval_no ,reporting_date,writer_name,title
+  FROM
+  (
+    SELECT 
+    rownum rn,code,approval_no,reporting_date,writer,title,vacation,start_date,end_date,content,turn,approver,order_no,signfile_name,sign_no,writer_name
+    FROM
+      (
+      SELECT 
+      a.code,a.approval_no,reporting_date,writer,title,vacation,start_date,end_date,content,turn,approver,order_no,signfile_name,sign_no,writer_name
+      FROM
+      approval a
+      JOIN sign s 
+      ON
+      a.code=s.code 
+      AND
+      a.approval_no=s.approval_no
+      AND approver=#{approver}
+      AND turn=order_no
+      AND state='제출'
+      ORDER BY reporting_date
+      )
+    WHERE
+    <![CDATA[
+    rownum <=#{pageNum}*#{amount}
+    ]]>
+  )
+  WHERE 
+  <![CDATA[
+  rn > (#{pageNum}-1)*#{amount}
+  ]]>
+</select>
+
+
+<select id="getViewApproval" resultType="org.zerock.vo.ViewApprovalVO">
+  SELECT 
+  a.code,a.approval_no,reporting_date,writer,title,vacation,start_date,end_date,content,turn,signfile_name,sign_no,order_no,writer_grade,approver,user_name,grade,writer_name
+  FROM 
+  approval a
+  JOIN 
+  sign s
+  ON
+  a.code=s.code 
+  AND 
+  a.approval_no=s.approval_no
+  AND
+  a.code=#{code} 
+  AND 
+  a.approval_no=#{approvalnumber}
+  JOIN 
+  member m
+  ON
+  approver=user_id
+  ORDER BY order_no
+</select>
+
+<update id="applovalSign">
+   UPDATE sign
+   SET signfile_name=#{signfilename}
+   WHERE sign_no=#{signnumber}
+</update>
+
+<update id="applovalTurnIncrease">
+   UPDATE approval
+   SET turn=turn+1  
+   WHERE
+   code=#{code} 
+   AND
+   approval_no=#{approvalnumber}
+</update>
+
+<update id="applovalcomplete">
+   UPDATE approval
+   SET state='승인'  
+   WHERE
+   code=#{code} 
+   AND
+   approval_no=#{approvalnumber}
+</update>
+
+<update id="applovalreject">
+   UPDATE approval
+   SET state='반려'  
+   WHERE
+   code=#{code} 
+   AND
+   approval_no=#{approvalnumber}
+</update>
+
+ <select id="getCompleteApprovalListTotalCount" resultType="int">
+      SELECT 
+      count(*) 
+      FROM
+      approval
+      WHERE
+      writer=#{writer}
+      AND
+      state='승인'
+</select>
+
+<select id="getCompleteApprovalList" resultType="org.zerock.vo.ApprovalVO">
+   
+  SELECT 
+  code ,approval_no ,reporting_date,writer,title
+  FROM
+  (
+    SELECT 
+    rownum rn,code,approval_no,reporting_date,writer,title,vacation,start_date,end_date,content,turn,writer_name
+    FROM
+      (
+      SELECT 
+      code,approval_no,reporting_date,writer,title,vacation,start_date,end_date,content,turn,writer_name
+      FROM
+      approval 
+      WHERE
+      writer=#{writer}
+      AND
+      state='승인'
+      ORDER BY reporting_date
+      )
+    WHERE
+    <![CDATA[
+    rownum <=#{pageNum}*#{amount}
+    ]]>
+  )
+  WHERE 
+  <![CDATA[
+  rn > (#{pageNum}-1)*#{amount}
+  ]]>
+</select>
+
+ <select id="getRejectApprovalListTotalCount" resultType="int">
+      SELECT 
+      count(*) 
+      FROM
+      approval
+      WHERE
+      writer=#{writer}
+       AND
+      state='반려'
+</select>
+
+<select id="getRejectApprovalList" resultType="org.zerock.vo.ApprovalVO">
+   
+  SELECT 
+  code ,approval_no ,reporting_date,writer,title
+  FROM
+  (
+    SELECT 
+    rownum rn,code,approval_no,reporting_date,writer,title,vacation,start_date,end_date,content,turn,writer_name
+    FROM
+      (
+      SELECT 
+      code,approval_no,reporting_date,writer,title,vacation,start_date,end_date,content,turn,writer_name
+      FROM
+      approval 
+      WHERE
+      writer=#{writer}
+      AND
+      state='반려'
+      ORDER BY reporting_date
+      )
+    WHERE
+    <![CDATA[
+    rownum <=#{pageNum}*#{amount}
+    ]]>
+  )
+  WHERE 
+  <![CDATA[
+  rn > (#{pageNum}-1)*#{amount}
+  ]]>
+</select>
+
+<insert id="insertVacation">
+    <selectKey keyProperty="attNo" resultType="int" order="BEFORE">
+	    	SELECT SEQ_ATT.NEXTVAL FROM DUAL
+    </selectKey>
+    INSERT INTO 
+    attendance(att_no,user_id,state,att_date,code,vacation)
+    VALUES
+    (#{attNo},#{userId},'휴가',#{attDate},#{code},#{vacation})
+</insert>
+
+<insert id="insertHalfVacation">
+    <selectKey keyProperty="attNo" resultType="int" order="BEFORE">
+	    	SELECT SEQ_ATT.NEXTVAL FROM DUAL
+    </selectKey>
+    INSERT INTO 
+    attendance(att_no,user_id,att_date,code,vacation)
+    VALUES
+    (#{attNo},#{userId},#{attDate},#{code},#{vacation})
+</insert>
+
+</mapper>
