@@ -79,6 +79,11 @@
   <version>${org.springframework-version}</version>
 </dependency>
 
+<dependency>
+    <groupId>com.oracle.database.jdbc</groupId>
+    <artifactId>ojdbc8</artifactId>
+    <version>23.6.0.24.10</version>
+</dependency>
 <!-- https://mvnrepository.com/artifact/org.projectlombok/lombok -->
 <dependency>
     <groupId>org.projectlombok</groupId>
