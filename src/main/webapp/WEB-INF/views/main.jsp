@@ -21,7 +21,7 @@ main{
 <header> <%@ include file="header.jsp" %> </header>
 <aside> <%@ include file="nav.jsp" %> </aside>
 <main>
-<h1>환영합니다!</h1>
+<h1>환영합니다!!</h1>
  </main>
 <footer> <%@ include file="footer.jsp" %> </footer> 
 </body>
