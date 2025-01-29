@@ -1,4 +1,4 @@
-package org.zerock.Test;
+package org.zerock.controller;
 
 import static org.junit.Assert.fail;
 
