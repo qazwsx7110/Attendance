@@ -1,8 +1,10 @@
 package org.zerock.vo;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 @Data
+@EqualsAndHashCode(callSuper=false)
 public class MemberPageVO extends PageVO{
 	
 	String code;
