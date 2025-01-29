@@ -35,28 +35,11 @@ import lombok.extern.log4j.Log4j;
 @Log4j
 public class mappertest {
 	
-	@Autowired
-	private MemberMapper mapper;
-	
-	@Autowired
-	private MemberService memberservice;
-	
-	@Autowired
-	private PasswordEncoder pwencoder;
-	
-	@Autowired
-	private DataSource ds;
-	
-	@Autowired
-	private ExcelService exelservice;
-	
-	@Autowired
-	private AttendanceService attendanceservice;
-	
+
 	@Test
 	public void testExist() {
 		
-		System.out.println(attendanceservice.vacationList(10));
+	
        
 	}
 	
