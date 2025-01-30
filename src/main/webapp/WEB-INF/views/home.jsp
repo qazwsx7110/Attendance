@@ -53,7 +53,7 @@ background-color:#f7f8f9;
 
 <div id="home">
 <h2>
-	환영합니다.
+	환영합니다..
 </h2>
 </div>
 
